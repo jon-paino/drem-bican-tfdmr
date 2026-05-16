@@ -443,9 +443,10 @@ and the BrainSpan filter implemented in
 UCLA's Hoffman2 cluster; per-lineage runtime is dominated by the
 \texttt{bedtools intersect} step over the ChIP-Atlas peak set, which
 parallelizes naturally over accessions. The scripts that implement
-each step are maintained in the project repository; rather than
-reproduce the shell plumbing, this section gives pseudocode for the
-two steps where the algorithm itself is the point.
+each step are publicly available
+(Section~\ref{sec:code})~\cite{paino2026repo}; rather than reproduce
+the shell plumbing, this section gives pseudocode for the two steps
+where the algorithm itself is the point.
 
 Algorithm~\ref{alg:dmr_aggr} gives the per-cluster CpG aggregation
 over DMRs that produces one column of the $\beta$-matrix described in
@@ -730,6 +731,24 @@ regenerated priors retain the biologically anchored borderline
 regulators that motivated the threshold choice and yield an OPC--ODC
 DREM fit with biologically coherent split annotations, including
 SOX10 enrichment resolved across multiple intra-lineage splits.
+
+\section{Code Availability}
+\label{sec:code}
+
+The scripts implementing the pipeline described in this report are
+publicly available at
+\url{https://github.com/jon-paino/drem-bican-tfdmr}~\cite{paino2026repo}.
+The repository contains the per-lineage DMR $\beta$-matrix
+construction scripts (\texttt{apm\_*\_DMR.sh},
+\texttt{combine\_filtered\_methylation\_*.sh}), the TF--DMR prior
+builder and its driver (\texttt{regenerate\_tf\_dmr.sh},
+\texttt{run\_all\_lineages.sh}), and the BrainSpan RPKM TF filter
+(\texttt{brainspan\_filter\_tf\_prior.py}), with a README documenting
+each script and the pipeline order, together with a \texttt{paper/}
+directory holding the \LaTeX{} source and compiled PDF of this
+report. It contains code and writeup source only: the BICAN-derived
+inputs and outputs are not redistributed there, as the underlying
+atlas is unpublished.
 
 \begin{acks}
 The author thanks Jason Ernst for advising this work, and Luke,
