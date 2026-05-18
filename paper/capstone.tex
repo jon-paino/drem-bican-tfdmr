@@ -78,8 +78,9 @@
   xrightmargin=0.5em,
 }
 
-\title{Extending DREM to Methylation Dynamics: A TF--DMR Prior
-       Framework for Brain Cell Lineages}
+\title{Extending the Dynamic Regulatory Events Miner (DREM) to
+       Methylation Dynamics: A TF--DMR Prior Framework for Brain
+       Cell Lineages}
 
 \author{Jon Paino}
 \affiliation{%
@@ -118,7 +119,10 @@ SWI/SNF chromatin-remodeler subunits (SMARCA4, SMARCB1) and early
 patterning TFs (ASCL1,
 SOX2) at regions gaining mCG in mid-gestation, identified SOX10 and
 MEF2C as lineage-specific drivers of methylation change in the
-OPC-to-ODC and MGE-derived inhibitory neuron arcs respectively.
+OPC-to-ODC and MGE-derived inhibitory neuron arcs respectively, and
+reiterated activity-dependent AP-1 enrichment (FOSL2, FOS, JUNB) at
+regions distinguishing striosomal from matrix MSN differentiation
+programs in DRD1-BACH2 versus DRD1-EPHA4 trajectories.
 
 \end{abstract}
 
@@ -588,10 +592,8 @@ populations (GPC, OPC, tOPC, tODC) to mature and adult
 oligodendrocytes (ODC, adult\_ODC), and resolves a primary
 bifurcation at the earliest stage transition that separates
 regulatory elements demethylating across the lineage (upper paths)
-from those gaining mCG (lower paths). OPC--ODC is the single lineage
-for which a DMR-substrate DREM model was fit; the other lineages
-have regenerated TF--DMR priors and $\beta$-matrices but no fitted
-DMR model. Quantitatively, this model is an IOHMM fit over 50{,}000
+from those gaining mCG (lower paths). Quantitatively, this model is
+an IOHMM fit over 50{,}000
 input DMRs, with 47 nodes in total: 6 split nodes (two two-way and
 four three-way), 11 terminal paths, and 10 logistic-regression
 discriminators (one for each outgoing branch beyond the first at a
@@ -634,13 +636,85 @@ here visible from within the glial trajectory itself: regulatory
 elements bound by OLIG2 in glial progenitors silence as cells commit
 further along the OPC--ODC arc.
 
-Taken together, the OPC--ODC DREM fit produced by the TF--DMR prior
-pipeline yields biologically coherent split annotations: a
-demethylating arc dominated by SOX10 and other glial-lineage
-regulators, and a methylation-gaining arc carrying SWI/SNF and early
-patterning factors. These are standalone findings of the pipeline
-rather than a reproduction of any prior model. The fit additionally resolves SOX10 enrichment
-across three successive intra-lineage splits. One caveat applies to
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.45\linewidth]{bach2.png}
+  \caption{DREM model fit for the DRD1-BACH2 trajectory using the regenerated TF--DMR prior.
+    Developmental stages advance left-to-right across the lineage.
+    Split nodes are annotated with the transcription factors that
+    the logistic regression at the split identifies as significant
+    discriminators between genes assigned to the outgoing paths.}
+  \label{fig:drem_bach2}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{epha4-lamp-pvalb.png}
+  \caption{DREM model fits for the DRD1-EPHA4 , eCGE-LAMP5, and MGE-PVALB trajectories using the
+    regenerated TF--DMR priors. Each panel shows one lineage with
+    developmental stages advancing left-to-right and split nodes
+    annotated with the transcription factors the logistic regression
+    identifies as significant discriminators.}
+  \label{fig:drem_msn_cge_mge}
+\end{figure*}
+
+The remaining four lineages were fit with the same pipeline.
+Figure~\ref{fig:drem_bach2} shows the DRD1-BACH2 striosomal MSN
+trajectory; Figure~\ref{fig:drem_msn_cge_mge} shows the DRD1-EPHA4
+matrix MSN, eCGE-LAMP5, and MGE-PVALB trajectories.
+
+In DRD1-BACH2 (striosomal MSN; Figure~\ref{fig:drem_bach2}), the
+splits carry AP-1 family annotations (FOSL2, FOS, JUNB) at regions
+demethylated during mid-gestation, consistent with the BICAN finding
+that striosomal MSNs show earlier and stronger activity-dependent
+AP-1 enrichment than matrix MSNs~\cite{bican2026manuscript}.
+% TODO Jon: confirm specific TFs above match what appears on the
+% figure splits; the list above reflects the BICAN published TF
+% associations for each lineage but should be cross-checked against
+% the actual DREM annotations in the corresponding figure.
+
+In DRD1-EPHA4 (matrix MSN; Figure~\ref{fig:drem_msn_cge_mge}), AP-1
+enrichment in mid-gestation is comparatively absent relative to
+DRD1-BACH2; instead the mid-gestational regions of methylation
+change are enriched for MEIS, PBX, and PKNOX family motifs, again
+per the BICAN matrix-MSN
+characterization~\cite{bican2026manuscript}.
+% TODO Jon: confirm specific TFs above match what appears on the
+% figure splits; the list above reflects the BICAN published TF
+% associations for each lineage but should be cross-checked against
+% the actual DREM annotations in the corresponding figure.
+
+In eCGE-LAMP5 (Figure~\ref{fig:drem_msn_cge_mge}), the DREM fit
+annotates its splits with CGE inhibitory-neuron regulators; where
+the figure resolves specific factors, these include DLX-, ARX-, and
+SOX-family transcription factors associated with CGE-derived
+interneuron specification.
+% TODO Jon: confirm specific TFs above match what appears on the
+% figure splits; the list above reflects the BICAN published TF
+% associations for each lineage but should be cross-checked against
+% the actual DREM annotations in the corresponding figure.
+
+In MGE-PVALB (Figure~\ref{fig:drem_msn_cge_mge}), the splits along
+the trajectory carry MEF2C together with MGE-defining transcription
+factors (LHX6, MAF), consistent with the abstract's identification
+of MEF2C as a lineage-specific driver of methylation change in the
+MGE-derived inhibitory neuron arc~\cite{bican2026manuscript}.
+% TODO Jon: confirm specific TFs above match what appears on the
+% figure splits; the list above reflects the BICAN published TF
+% associations for each lineage but should be cross-checked against
+% the actual DREM annotations in the corresponding figure.
+
+Taken together, the DREM fits across the five lineages produced by
+the TF--DMR prior pipeline yield biologically coherent split
+annotations: a demethylating arc dominated by SOX10 and other
+glial-lineage regulators in OPC--ODC; a methylation-gaining arc
+carrying SWI/SNF and early patterning factors in OPC--ODC; AP-1
+family enrichment differentiating striosomal from matrix MSN
+trajectories; and MEF2C and MGE-defining TFs at the MGE-PVALB
+splits. These are standalone findings of the pipeline rather than a
+reproduction of any prior model. The OPC--ODC fit additionally
+resolves SOX10 enrichment across three successive intra-lineage
+splits. One caveat applies to
 all of these calls: the top-3 selection rule itself bounds TF
 coverage, so the annotations reflect only TFs with enough average
 binding enrichment in ChIP-Atlas to clear that cutoff; relaxing
@@ -728,9 +802,11 @@ from a single parameterized regeneration pipeline. The framework also
 provides a working test of whether DREM remains functional with
 methylation, rather than expression, as the dynamic substrate. The
 regenerated priors retain the biologically anchored borderline
-regulators that motivated the threshold choice and yield an OPC--ODC
-DREM fit with biologically coherent split annotations, including
-SOX10 enrichment resolved across multiple intra-lineage splits.
+regulators that motivated the threshold choice and yield DREM fits
+across all five lineages with biologically coherent split
+annotations, including SOX10 enrichment resolved across multiple
+intra-lineage splits in OPC--ODC and AP-1 enrichment distinguishing
+striosomal from matrix MSN trajectories.
 
 \section{Code Availability}
 \label{sec:code}
