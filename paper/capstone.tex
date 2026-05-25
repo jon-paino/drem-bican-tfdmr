@@ -78,9 +78,9 @@
   xrightmargin=0.5em,
 }
 
-\title{Extending the Dynamic Regulatory Events Miner (DREM) to
-       Methylation Dynamics: A TF--DMR Prior Framework for Brain
-       Cell Lineages}
+\title{Extending the Dynamic Regulatory Events Miner to Methylation
+       Dynamics: A Transcription-Factor-to-DMR Prior Framework for
+       Brain Cell Lineages}
 
 \author{Jon Paino}
 \affiliation{%
@@ -108,7 +108,7 @@ table built by intersecting ChIP-Atlas peak BEDs with
 lineage-specific DMR BEDs, retaining DMR identity rather than
 collapsing to gene-level annotations. This report describes the
 TF--DMR prior framework, the curated accession whitelist (172 records,
-including both SRX and ERX entries) that defines the transcription
+spanning SRX, ERX, and DRX entries) that defines the transcription
 factor coverage, a BrainSpan RPKM expression filter that restricts the
 prior to TFs operative in developing human brain, and a parameterized
 regeneration pipeline that produces five lineage-specific TF--DMR
@@ -145,7 +145,7 @@ biological measurement enters the dynamic input layer, but the
 default workflow assumes the dynamic substrate is gene expression and
 the prior connects TFs to genes through promoter windows.
 
-The BICAN (Brain Initiative Cell Atlas Network) U01 multi-modal
+The BICAN (Brain Initiative Cell Atlas Network) multi-modal
 atlas of the developing human brain~\cite{bican2026manuscript}
 produces a different dynamic
 substrate: DNA methylation $\beta$-values measured at differentially
@@ -153,10 +153,13 @@ methylated regions (DMRs) along each cell-type lineage. Methylation
 changes are localized to the DMRs themselves, not to the
 $\pm 2$~kb windows around transcription start sites that the
 default TF--gene prior is built from. Applying DREM to methylation
-dynamics therefore requires replacing the prior. The substantive
-question is not how to fit the IOHMM but how to construct a
-prior whose substrate matches the substrate of the dynamic
-measurement.
+dynamics therefore raises two questions. The first is methodological:
+how to construct a prior whose substrate matches the substrate of the
+dynamic measurement rather than the gene-promoter substrate DREM
+assumes by default. The second is whether DREM's IOHMM, which was
+designed and validated on gene expression, remains functional at all
+when methylation $\beta$ rather than expression is supplied as the
+dynamic input. This report addresses both.
 \input{background_section}
 
 \section{The TF--DMR Prior Framework}
@@ -201,12 +204,9 @@ lose mCG and regions that gain mCG along the lineage.
         \]
         where the sum runs over CpG sites $i$ that lie within DMR
         $d$ and have coverage in cluster $c$. A DMR with no covered
-        CpGs in a given cluster has no defined $\beta$ for that
-        cell. DREM requires a missing value to be an empty field
-        rather than a literal placeholder string; rather than rely
-        on that convention, any DMR whose row would contain a
-        missing value in one or more clusters is removed as an
-        intermediate filtering step before the matrix is passed to
+        CpGs in a given cluster has no defined $\beta$ for that cell;
+        any DMR whose row would contain such a missing value in one
+        or more clusters is removed before the matrix is passed to
         DREM, so the matrix DREM observes carries a defined $\beta$
         in every cell.
   \item Assemble the DMR-by-cluster $\beta$ matrix by pasting the
@@ -258,9 +258,9 @@ gene-promoter windows are at best a coarse proxy and at worst a
 different biological signal. A prior that connects TFs to genes is
 therefore mismatched: it asks the IOHMM split classifier to learn
 associations between regulators and entities (genes) that are not the
-entities being measured (DMRs). The TF--DMR prior framework resolves
-the mismatch by building the prior over the same substrate as the
-dynamic measurement: ChIP-Atlas peaks are intersected directly with
+entities being measured (DMRs). The framework introduced here builds
+a TF-to-DMR (TF--DMR) prior that resolves the mismatch by sitting
+over the same substrate as the dynamic measurement: ChIP-Atlas peaks are intersected directly with
 the merged lineage DMR BED, and the resulting prior maps each
 \texttt{TF|cell|accession} key to the set of DMR identifiers where
 that experiment's peaks overlap a lineage DMR.
@@ -337,7 +337,7 @@ Section~\ref{sec:impl} (Algorithm~\ref{alg:intersect}).
 The curated TF set defines which ChIP-Atlas experiments enter the
 TF--DMR prior. The curation procedure proceeds as follows. For each
 (TF, cell type) combination that passes the curation criteria, the
-three ChIP-Atlas experiments with the highest average binding
+three ChIP-Atlas experiments with the highest binding
 enrichment are retained; this top-3 selection rule matches the
 per-state TF assignment used
 in the ChromHMM-based~\cite{ernst2017chromhmm} BICAN methylation
@@ -351,25 +351,30 @@ SRX-prefixed: they include SRX and ERX (and similar) accessions,
 reflecting the archive in which each experiment was originally
 deposited. The non-SRX accessions were part of the original
 selection procedure rather than a separate addendum. In total the
-curated set comprises 172~accessions, including both SRX and ERX
+curated set comprises 172~accessions, spanning SRX, ERX, and DRX
 entries.
 
-The exclusion criteria remove categories of antigens that appear in
-the ChIP-Atlas metadata but are not informative for TF--DMR
-inference: antibody-tag entries (\texttt{Epitope}, \texttt{GFP},
-\texttt{8-Hydroxydeoxyguanosine} and similar) that reflect different
-experimental approaches where the TF target was annotated in a
-different ChIP-Atlas metadata column, and histone-modification
-antigens (\texttt{H3K27ac}, \texttt{H3K4me3}, \texttt{H3K9me3} and
-similar), which describe chromatin state rather than sequence-specific
-binding. Inspection of the final curated set confirms that no
-histone-modification antigen remains in it.
+The exclusion criteria are applied upstream by the BICAN
+ChromHMM-based selection that produces the 172-record accession
+table; this work's pipeline inherits the resulting table and does not
+re-filter it. The upstream curation removes categories of antigens
+that appear in the ChIP-Atlas metadata but are not informative for
+TF--DMR inference: antibody-tag entries (\texttt{Epitope},
+\texttt{GFP}, \texttt{8-Hydroxydeoxyguanosine} and similar) that
+reflect different experimental approaches where the TF target was
+annotated in a different ChIP-Atlas metadata column, and
+histone-modification antigens (\texttt{H3K27ac}, \texttt{H3K4me3},
+\texttt{H3K9me3} and similar), which describe chromatin state rather
+than sequence-specific binding. Inspection of the curated 172-record
+table confirms that no histone-modification, antibody-tag, or
+chemical-modification antigen remains in it; these exclusions are
+inherited from the upstream curation rather than applied here.
 
 The retained antigens are not exclusively sequence-specific
 transcription factors. Most are sequence-specific TFs (for example
 REST, SOX10, SOX2, ASCL1, NEUROD1, FOS, FOSL2, JUNB, the MEF2
 family, and nuclear receptors such as NR3C1). The remainder are non-sequence-specific chromatin-associated
-proteins that the top-3 average-binding-enrichment procedure
+proteins that the top-3 binding-enrichment procedure
 retained because they carry strong, localized ChIP-seq evidence: the
 cohesin
 subunits RAD21 and SMC1A, which form a structural, architectural
@@ -382,11 +387,19 @@ transcription-elongation and RNA-associated factors (NELFE, SETX,
 FUS, EWSR1). These are retained deliberately, as proteins whose
 localized binding is informative about regulatory-element activity
 at DMRs, but they are not sequence-specific regulators and are
-described as such rather than as ``cofactors.'' One entry,
-\texttt{BCL10}, is a cytoplasmic signaling adaptor with no
-transcriptional or chromatin-associated role; it is a curation
-artifact rather than a regulatory input and should be dropped from
-the curated set. The
+described as such rather than as ``cofactors.'' One retained entry,
+\texttt{BCL10}, appears in the curated set with three SRX accessions
+in IMR90 cells (\texttt{SRX329082}, \texttt{SRX329084},
+\texttt{SRX329085}). BCL10 is canonically a cytoplasmic signaling
+adaptor of the CARMA1--BCL10--MALT1 complex with no established
+sequence-specific or chromatin-associated role, so a ChIP-Atlas
+``BCL10'' antigen assignment in a non-neural fibroblast line is
+plausibly either a metadata-labeling issue or an atypical experiment;
+the source publications behind these SRX records have not been
+verified against the ChIP-Atlas experiment-list metadata here.
+% TODO(jon): verify BCL10 source publication(s) against ChIP-Atlas
+% experimentList.tab.gz and decide whether to drop these three SRX
+% accessions from the curated set. The
 curation is canonical across all five lineage outputs: the same
 accession-to-(TF, cell) mapping is applied to every lineage, and the
 final TF--DMR files exhibit zero label conflicts across the five
@@ -413,16 +426,25 @@ filter rule is:
 The threshold used is mean RPKM~$> 1.0$. Its rationale is the
 borderline-regulator anchor point: REST, a transcriptional repressor
 with well-characterized roles in neural lineage specification, has a
-BrainSpan mean RPKM of~$1.29$, so a threshold above that value would
-drop REST despite its biological relevance, while $1.0$ retains REST
-and similar borderline regulators yet still excludes TFs that are not
-appreciably expressed across the BrainSpan samples. Of the 78~unique
-TF symbols in the curated gene-substrate prior used as the analog
-reference, 58~pass the filter, 17~fall below the threshold, and
-3~are absent from the BrainSpan gene table entirely: the
-antibody-tag antigens \texttt{Epitope} and \texttt{GFP}, which have
-no gene-symbol counterpart, and \texttt{KMT2D}, a gene symbol not
-represented in the BrainSpan rows metadata. The analysis in this
+BrainSpan mean RPKM of~$1.29$, and the chosen threshold of $1.0$
+lies below that value so REST is retained; a threshold above $1.29$
+would have dropped REST despite its biological relevance, while
+$1.0$ still excludes TFs that are not appreciably expressed across
+the BrainSpan samples. The filter outcome is reported here on the
+78-symbol \emph{gene-substrate analog reference}, an earlier and
+looser TF set built from the same upstream BICAN selection but prior
+to the antigen exclusions that produced the 172-record curated
+accession set. The two sets are distinct: the looser 78-symbol
+reference still contains the antibody-tag and chemical-modification
+entries (\texttt{Epitope}, \texttt{GFP},
+\texttt{8-Hydroxydeoxyguanosine}) that the upstream curation later
+removed, whereas the final 172-record curated accession set used in
+the DREM analysis already excludes them. Of the 78~unique TF symbols
+in this analog reference, 58~pass the filter, 17~fall below the
+threshold, and 3~are absent from the BrainSpan gene table entirely:
+the antibody-tag antigens \texttt{Epitope} and \texttt{GFP}, which
+have no gene-symbol counterpart in BrainSpan, and \texttt{KMT2D}, a
+gene symbol not represented in the BrainSpan rows metadata. The analysis in this
 report
 uses a single prior variant: the annotated
 \texttt{TF|cell|accession} prior, which is the file supplied to DREM
@@ -578,9 +600,9 @@ DREM models.
   regenerated TF--DMR prior. Developmental stages advance
   left-to-right across the lineage (2T\_GPC, GPC, OPC, tOPC, tODC,
   ODC, adult\_ODC). Split nodes are annotated with the transcription
-  factors that the logistic regression at the split identifies as
-  significant discriminators between genes assigned to the outgoing
-  paths.}
+  factors whose targets are significantly enriched, by DREM's
+  hypergeometric test, among the genes assigned to an outgoing path
+  relative to the genes entering the split.}
   \label{fig:drem_opc_odc}
 \end{figure*}
 
@@ -593,12 +615,16 @@ oligodendrocytes (ODC, adult\_ODC), and resolves a primary
 bifurcation at the earliest stage transition that separates
 regulatory elements demethylating across the lineage (upper paths)
 from those gaining mCG (lower paths). Quantitatively, this model is
-an IOHMM fit over 50{,}000
-input DMRs, with 47 nodes in total: 6 split nodes (two two-way and
-four three-way), 11 terminal paths, and 10 logistic-regression
-discriminators (one for each outgoing branch beyond the first at a
-split, so that the per-split discriminator count is the split's
-out-degree minus one).
+an IOHMM fit over 50{,}000 input DMRs, with 47 nodes in total: 6
+split nodes (two two-way and four three-way) and 11 terminal paths.
+At each split, candidate TFs are scored by DREM's hypergeometric
+enrichment test and are retained as path annotations when the
+enrichment passes the split significance threshold of $p \leq
+10^{-3}$ (DREM's
+\texttt{Key\_Input\_X\_p-val\_10\textasciicircum{}-X} parameter set
+to $3.0$, with significance basis
+\texttt{Path Significance Conditional on Split});
+$61$ TF annotations are assigned across the six splits.
 
 At the upper, demethylating split, the DREM model annotates the
 bifurcation with SOX10, NEUROD1, ASCL1, and TCF21 as significant
@@ -641,9 +667,10 @@ further along the OPC--ODC arc.
   \includegraphics[width=0.45\linewidth]{bach2.png}
   \caption{DREM model fit for the DRD1-BACH2 trajectory using the regenerated TF--DMR prior.
     Developmental stages advance left-to-right across the lineage.
-    Split nodes are annotated with the transcription factors that
-    the logistic regression at the split identifies as significant
-    discriminators between genes assigned to the outgoing paths.}
+    Split nodes are annotated with the transcription factors whose
+    targets are significantly enriched, by DREM's hypergeometric
+    test, among the genes assigned to an outgoing path relative to
+    the genes entering the split.}
   \label{fig:drem_bach2}
 \end{figure*}
 
@@ -652,9 +679,11 @@ further along the OPC--ODC arc.
   \includegraphics[width=\linewidth]{epha4-lamp-pvalb.png}
   \caption{DREM model fits for the DRD1-EPHA4 , eCGE-LAMP5, and MGE-PVALB trajectories using the
     regenerated TF--DMR priors. Each panel shows one lineage with
-    developmental stages advancing left-to-right and split nodes
-    annotated with the transcription factors the logistic regression
-    identifies as significant discriminators.}
+    developmental stages advancing left-to-right. Split nodes are
+    annotated with the transcription factors whose targets are
+    significantly enriched, by DREM's hypergeometric test, among the
+    genes assigned to an outgoing path relative to the genes
+    entering the split.}
   \label{fig:drem_msn_cge_mge}
 \end{figure*}
 
@@ -718,9 +747,9 @@ from the underlying TF binding evidence base, not from the prior
 construction itself. The top-3 rule is itself a restriction, not
 only a coverage floor: relaxing it (retaining more than three
 experiments per (TF, cell type) combination, or lowering the
-average-binding-enrichment bar) would admit additional TFs into
-every lineage prior, at the cost of including experiments with lower
-average binding enrichment.
+binding-enrichment bar) would admit additional TFs into every
+lineage prior, at the cost of including experiments with lower
+binding enrichment.
 
 The BrainSpan expression filter assumes that brain-wide bulk RPKM is
 a reasonable proxy for whether a TF is operative in any specific
@@ -780,7 +809,7 @@ factors and the entities indexed in the dynamic matrix. The TF--DMR
 prior framework realizes that observation for the BICAN methylation
 analysis: it replaces the standard TF-to-gene prior with a
 TF-to-DMR prior, restricts the TF coverage with a curated accession
-whitelist (172 records, including both SRX and ERX entries) and a
+whitelist (172 records, spanning SRX, ERX, and DRX entries) and a
 BrainSpan RPKM filter, and produces all five lineage-specific priors
 from a single parameterized regeneration pipeline. The framework also
 provides a working test of whether DREM remains functional with
@@ -797,7 +826,7 @@ striosomal from matrix MSN trajectories.
 
 The scripts implementing the pipeline described in this report are
 publicly available at
-\url{https://github.com/jon-paino/drem-bican-tfdmr}~\cite{paino2026repo}.
+\url{https://github.com/ernstlab/drem-bican-tfdmr}~\cite{paino2026repo}.
 The repository contains the per-lineage DMR $\beta$-matrix
 construction scripts (\texttt{apm\_*\_DMR.sh},
 \texttt{combine\_filtered\_methylation\_*.sh}), the TF--DMR prior
@@ -811,10 +840,13 @@ inputs and outputs are not redistributed there, as the underlying
 atlas is unpublished.
 
 \begin{acks}
-The author thanks Jason Ernst for advising this work, and Luke,
-Chongyuan, and Terence for the BICAN methylation data, trajectory
-definitions, and the ChromHMM-derived ChIP-Atlas curation on which
-the TF--DMR priors are built.
+The author thanks Jason Ernst for advising this work; Chongyuan Luo,
+Runjia Li, and
+Terence Li for the BICAN methylation data,
+trajectory definitions, and the ChromHMM-derived ChIP-Atlas curation
+on which the TF--DMR priors are built; and the broader team that
+generated the developing human brain
+atlas~\cite{bican2026manuscript}.
 \end{acks}
 
 \bibliographystyle{ACM-Reference-Format}
